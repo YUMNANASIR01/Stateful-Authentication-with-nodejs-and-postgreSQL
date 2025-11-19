@@ -1,0 +1,19 @@
+# docker-compose.yaml
+services:
+  postgres:
+    image: postgres:17.4
+    # Yeh 'image' Docker Hub se PostgreSQL ka official image download karega.
+    
+    ports:
+      - 5432:5432
+    # Yeh aapke computer ke port 5432 ko container ke port 5432 se connect karega.
+    
+    environment:
+      POSTGRES_DB: saltHashing
+      # Database ka naam set kar rahe hain.
+      
+      POSTGRES_USER: postgres
+      # Database user ka naam.
+      
+      POSTGRES_PASSWORD: admin
+      # Database user ka password. (Isko real projects mein strong rakhein)
