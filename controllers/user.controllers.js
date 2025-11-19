@@ -6,6 +6,7 @@ const {eq} = require("drizzle-orm")
 const {randomBytes, createHmac} = require('node:crypto');
 
 
+
 exports.signupFunction =  async (req,res)=>{
     const {username,email, password} = req.body
 
@@ -79,7 +80,18 @@ exports.loginFunction = async (req, res) => {
      return res.json({ status: "Welcome to website", data : session });
 };
 
+exports.homeFunction = async (req,res) => {
+    //  Is user login(sesion id check) logic checking
+    //  If does user have data in request.user
+    const userData = req.user
+     if (!userData){
+         return res.status(401).json({error : " You are not login, Please First login"})
+     }
+     return res.status(200).json({status : "Here is your data", data: userData})
 
+    //    user login hai yah nahi hai (1.login) (2. check fetch and check)
+    //  user information from user table 
+}
 
 
 
