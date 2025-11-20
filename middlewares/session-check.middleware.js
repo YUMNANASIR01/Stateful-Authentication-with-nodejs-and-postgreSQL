@@ -1,45 +1,30 @@
-const getDbPromise = require("../db/connection");
+// middlewares\session-check.middleware.js
 const { eq } = require("drizzle-orm");
+const db = require("../db/connection")
 const { userSession } = require("../model/session.model");
 const { userTable } = require("../model/user.model");
 
-// ✅ UUID VALIDATION FUNCTION
-function isValidUUID(uuid) {
-    return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(uuid);
+exports.sessionCheckMiddleware = async (req, res, next)=>{
+    const sessionId = req.headers["session-id"]
+    if(!sessionId){
+        req.user = null // user data not available ❌
+        return next()
+    }
+
+    // First get the sessionId from database
+    const [session] = await db.select().from(userSession).where(eq(userSession.id, sessionId))
+    if(!session){
+        return res.status(401).json({error: "invalid session"})
+    }
+
+    // make a new table to show userTable, userSessions complete data
+    const [data] = await db.select().from(userSession).where(eq(userSession.id, sessionId))
+    .leftJoin(userTable, eq(userTable.id, userSession.userId))
+
+    req.user = data // user data is available ✅
+    next()
 }
 
-exports.sessionCheckMiddleware = async (req, res, next) => {
-    const db = await getDbPromise;
-    const sessionId = req.headers["session-id"];
-
-    if (!sessionId) {
-        req.user = null;
-        return next();
-    }
-
-    // 🔥 Validate UUID BEFORE running SQL 
-    if (!isValidUUID(sessionId)) {
-        return res.status(401).json({ error: "Invalid session format" });
-    }
-
-    const [session] = await db
-        .select()
-        .from(userSession)
-        .where(eq(userSession.id, sessionId));
-
-    if (!session) {
-        return res.status(401).json({ error: "Invalid session" });
-    }
-
-    const [data] = await db
-        .select()
-        .from(userSession)
-        .leftJoin(userTable, eq(userTable.id, userSession.userId))
-        .where(eq(userSession.id, sessionId));
-
-    req.user = data;
-    next();
-};
 
 
 
@@ -47,7 +32,8 @@ exports.sessionCheckMiddleware = async (req, res, next) => {
 
 
 
-// const getDbPromise = require("../db/connection");
+
+
 // const { eq, sql } = require("drizzle-orm");
 // const { userSession } = require("../model/session.model");
 // const { userTable } = require("../model/user.model");
@@ -75,4 +61,3 @@ exports.sessionCheckMiddleware = async (req, res, next) => {
 //     req.user = data;    // ok user data
 //     next();
 // };
-

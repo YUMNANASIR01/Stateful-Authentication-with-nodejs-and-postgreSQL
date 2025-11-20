@@ -77,7 +77,7 @@ exports.loginFunction = async (req, res) => {
     }).returning({id: userSession.id})
    
 
-     return res.json({ status: "Welcome to website", data : session });
+     return res.json({ status: "Welcome to website", sessionId : session.id });
 };
 
 exports.homeFunction = async (req,res) => {

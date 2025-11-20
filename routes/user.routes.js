@@ -11,7 +11,7 @@ router.post("/signup", signupFunction)
 // ------------- login ------------------------
 router.post("/login", loginFunction)
 
-// ------------- home  ------------------------
+// ------------- home  -----------------------
 // /user/home
 router.get("/home",sessionCheckMiddleware, homeFunction)
 

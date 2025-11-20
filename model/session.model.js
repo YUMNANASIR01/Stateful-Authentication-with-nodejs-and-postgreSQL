@@ -9,3 +9,4 @@ exports.userSession = pgTable("user_session", {
     createdAt: timestamp().defaultNow().notNull()
 })
 
+
