@@ -11,6 +11,8 @@
   "license": "ISC",
   "dependencies": {
     "@types/express": "^5.0.5",
+    "bcrypt": "^6.0.0",
+    "cookie-parser": "^1.4.7",
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.44.7",
     "express": "^5.1.0",

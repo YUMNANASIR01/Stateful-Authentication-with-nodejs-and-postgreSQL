@@ -3,10 +3,11 @@ const db= require("../db/connection")
 const {userTable} = require ("../model/user.model")
 const {userSession} = require ("../model/session.model")
 const {eq} = require("drizzle-orm")
-const {randomBytes, createHmac} = require('node:crypto');
+const bcrypt = require('bcrypt');
+const { GelSession } = require("drizzle-orm/gel-core");
 
 
-
+// --------------------- sign up -------------------------
 exports.signupFunction =  async (req,res)=>{
     const {username,email, password} = req.body
 
@@ -16,70 +17,57 @@ exports.signupFunction =  async (req,res)=>{
         return res.status(400).json({error : `user with email ${email} already exist`})
     }
     
-    //  create a salt , salt is a random string
-     const salt = randomBytes(256).toString("hex")
-     console.log("😒salt", salt);
-     
-    
-    //  password + salt
-    // convert into algorithms
-    const hashPassword = createHmac('sha256', salt ).update( password ).digest('hex');
-    console.log("❤️ hashPassword", hashPassword);           
+    //  hashing
+    //                  "n number of salt"
+    const hashPassword = await bcrypt.hash(password, 10)
     
     // save in to data base
     const result = await db.insert(userTable).values({
         username : username,
         email : email,
-        salt : salt,
         password : hashPassword
     }).returning({id : userTable.id})
 
     return res.status(200).json({status: "Account created", data: result})
 }
 
-
-// ---------------------------------------------------------------------
-
+// ----------------------- login ---------------------------
 exports.loginFunction = async (req, res) => {
     const { email, password } = req.body;
 
-    if (!email || !password) {
-        return res.status(400).json({ error: "Email and password are required." });
+    // Check if user exists
+    const [existingUser] = await db.select().from(userTable).where(eq(userTable.email, email));
+    if (!existingUser) {
+        return res.status(400).json({error: `User with this email ${email} does not exist`});
     }
-
-    const existingUser = await db
-        .select()
-        .from(userTable)
-        .where(eq(userTable.email, email));
-
-    if (existingUser.length === 0) {
-        return res.status(400).json({
-            error: `User with this email ${email} does not exist`
-        });
-    }
-
-    // extract user
-    const user = existingUser[0];
-
-    // get salt from db
-    const dbsalt = user.salt;   
-
-    // hash password
-    const newHashedPassword = createHmac("sha256", dbsalt).update(password).digest("hex");
-
-    // compare hashed passwords
-    if (newHashedPassword !== user.password) {
+    // Check password                         user given password    hash database save password
+    // Validate password
+    const isValidPassword = await bcrypt.compare(password, existingUser.password);
+    if (!isValidPassword) {
         return res.status(400).json({ error: "Incorrect password" });
     }
 
-    const [session] = await db.insert(userSession).values({
-        userId: user.id 
-    }).returning({id: userSession.id})
-   
+    // Create expiration date
+    const expireAt = new Date();
+    expireAt.setDate(expireAt.getDate() + 7); // 7 days later //update date and time
 
-     return res.json({ status: "Welcome to website", sessionId : session.id });
+    // Create session
+    const [session] = await db.insert(userSession)
+        .values({ userId: existingUser.id, expireAt: expireAt })
+        .returning({ id: userSession.id });
+
+    // Set sessionId cookie
+    res.cookie("sessionId", session.id, {
+        httpOnly: true,
+        secure: false, //frontend sy anany wale request ko rok deta hai true kary sy
+        sameSite: "lax", //for development
+        maxAge: 7 * 24 * 60 * 60 * 1000 //7 days setting cookies for 7 days
+    });
+    // data: session  ab hamin session id dekhny ki need nahi hai kun ky data ab hamara cookies mai session id mai save horaha hai
+    return res.json({ status: "Welcome to the website" });
 };
 
+// ------------------------------------- Home ----------------------------------
 exports.homeFunction = async (req,res) => {
     //  Is user login(sesion id check) logic checking
     //  If does user have data in request.user

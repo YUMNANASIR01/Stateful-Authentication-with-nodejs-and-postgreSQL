@@ -6,7 +6,8 @@ const { userTable } = require("./user.model")
 exports.userSession = pgTable("user_session", {
     id: uuid().primaryKey().defaultRandom(),
     userId: uuid().references(()=> userTable.id).notNull(),
-    createdAt: timestamp().defaultNow().notNull()
+    createdAt: timestamp().defaultNow().notNull(),
+    expireAt : timestamp().notNull()
 })
 
 

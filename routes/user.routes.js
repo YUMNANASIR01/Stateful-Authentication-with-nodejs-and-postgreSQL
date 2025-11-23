@@ -15,6 +15,8 @@ router.post("/login", loginFunction)
 // /user/home
 router.get("/home",sessionCheckMiddleware, homeFunction)
 
+// -----------------  ---------------------------
+
 
 module.exports = router
 
