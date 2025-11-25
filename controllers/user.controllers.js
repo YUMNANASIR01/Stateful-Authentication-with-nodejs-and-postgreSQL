@@ -4,12 +4,11 @@ const {userTable} = require ("../model/user.model")
 const {userSession} = require ("../model/session.model")
 const {eq} = require("drizzle-orm")
 const bcrypt = require('bcrypt');
-const { GelSession } = require("drizzle-orm/gel-core");
-
 
 // --------------------- sign up -------------------------
 exports.signupFunction =  async (req,res)=>{
-    const {username,email, password} = req.body
+    try{
+        const {username,email, password} = req.body
 
     const {existingUser} = await db.select().from(userTable).where(eq(userTable.email))
 //  ------ user validation 
@@ -30,10 +29,16 @@ exports.signupFunction =  async (req,res)=>{
 
     return res.status(200).json({status: "Account created", data: result})
 }
+    catch(err){
+        console.log("error in signup function", err)
+        return res.status(500).json({error : "Internal server error"})
+    }
+}
 
 // ----------------------- login ---------------------------
 exports.loginFunction = async (req, res) => {
-    const { email, password } = req.body;
+   try{
+     const { email, password } = req.body;
 
     // Check if user exists
     const [existingUser] = await db.select().from(userTable).where(eq(userTable.email, email));
@@ -55,7 +60,7 @@ exports.loginFunction = async (req, res) => {
     const [session] = await db.insert(userSession)
         .values({ userId: existingUser.id, expireAt: expireAt })
         .returning({ id: userSession.id });
-
+    
     // Set sessionId cookie
     res.cookie("sessionId", session.id, {
         httpOnly: true,
@@ -64,25 +69,51 @@ exports.loginFunction = async (req, res) => {
         maxAge: 7 * 24 * 60 * 60 * 1000 //7 days setting cookies for 7 days
     });
     // data: session  ab hamin session id dekhny ki need nahi hai kun ky data ab hamara cookies mai session id mai save horaha hai
+
     return res.json({ status: "Welcome to the website" });
-};
+}catch(err){
+    console.log("error in login function", err)
+    return res.status(500).json({error : "Internal server error"})
+   }
+}
 
 // ------------------------------------- Home ----------------------------------
 exports.homeFunction = async (req,res) => {
     //  Is user login(sesion id check) logic checking
     //  If does user have data in request.user
-    const userData = req.user
+    try{
+        const userData = req.user
      if (!userData){
          return res.status(401).json({error : " You are not login, Please First login"})
      }
      return res.status(200).json({status : "Here is your data", data: userData})
+    } 
+    catch(err){
+        console.log("error in home function", err)
+        return res.status(500).json({error : "Internal server error"})
+       }
 
     //    user login hai yah nahi hai (1.login) (2. check fetch and check)
     //  user information from user table 
 }
 
-
-
-
-
  // }).returning({id: userSession.id, userId: userSession.userId, createdAt: userSession.createdAt}); // Corrected: returning clause
+
+// ----------------------- logout ---------------------------
+exports.logoutFunction = async (req, res) => {
+try{
+        const sessionId = req.cookies.sessionId; 
+    // update session status to false (inactive)
+    if (sessionId) {
+        // Invalidate the session in the database
+        await db.update(userSession).set({isActive: false}).where(eq(userSession.id, sessionId));
+    }
+    // Clear the sessionId cookie
+    res.clearCookie("sessionId");
+    return res.status(200).json({status: "Logged out successfully"});
+
+} catch(err){
+    console.log("error in logout function", err)
+    return res.status(500).json({error : "Internal server error"})
+   }
+}

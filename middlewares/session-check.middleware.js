@@ -5,7 +5,8 @@ const { userSession } = require("../model/session.model");
 const { userTable } = require("../model/user.model");
 
 exports.sessionCheckMiddleware = async (req, res, next)=>{
-    // const sessionId req.header["session-id"]
+   try{
+     // const sessionId req.header["session-id"]
     const sessionId = req.cookies.sessionId
     if(!sessionId){
         req.user = null // user data not available ❌
@@ -19,22 +20,30 @@ exports.sessionCheckMiddleware = async (req, res, next)=>{
         res.clearCookie("sessionId")
         res.status(401).json({error: "invalid session Id in cookie"})
     }
+    //   is mai true yah false dono mai sy ek milay gya
+    //  checking session id is active or not
+    if(!data.user_session.isActive){
+      res.clearCookie("sessionId")
+      return res.status(401).json({error: "session expired, Please login again."})
+    }
     // session id expiration checking or (clear bhi kar raha hai data jab apki session id expire hai)
     // expiration code jab 7 din puray ho jain us ky bad 8 day pe seesion id expire hojai gyi or also session bhi expire hojai gya
 //current time zida hai   current time st
     if(new Date() > new Date(data.user_session.expireAt)){ //starting data hai jab hamari cookie bani tab ki date hai
       res.clearCookie("sessionId")
+
       return res.status(401).json({error: "session expired, Please login again."})
     }
     req.user = data // user data is available ✅
     next()
 }
+ catch(err){
+    console.log("error in session check middleware", err)
+    return res.status(500).json({error : "Internal server error"})
+   }
 
 
-
-
-
-
+}
 
 
 
