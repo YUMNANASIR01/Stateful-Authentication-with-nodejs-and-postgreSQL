@@ -43,7 +43,7 @@ exports.loginFunction = async (req, res) => {
     // Check if user exists
     const [existingUser] = await db.select().from(userTable).where(eq(userTable.email, email));
     if (!existingUser) {
-        return res.status(400).json({error: `User with this email ${email} does not exist`});
+        return res.status(400).json({error: `user with this email does not exist`});
     }
     // Check password                         user given password    hash database save password
     // Validate password

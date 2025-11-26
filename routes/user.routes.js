@@ -3,6 +3,7 @@ const express = require("express")
 const {signupFunction,  loginFunction, homeFunction, logoutFunction} = require("../controllers/user.controllers")
 const {sessionCheckMiddleware} = require ("../middlewares/session-check.middleware")
 const {signupValidationMiddleware, loginValidationMiddleware} = require("../middlewares/user.validation.middleware")
+const {logLimiterMiddleware} = require("../middlewares/ratelimit.middleware")
 
 const router = express.Router()
 
@@ -10,7 +11,7 @@ const router = express.Router()
 router.post("/signup", signupValidationMiddleware,signupFunction)
 
 // ------------- login ------------------------
-router.post("/login",loginValidationMiddleware, loginFunction)
+router.post("/login", logLimiterMiddleware , loginValidationMiddleware, loginFunction)
 
 // ------------- home  -----------------------
 // /user/home
